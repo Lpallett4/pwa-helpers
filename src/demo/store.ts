@@ -11,47 +11,46 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 declare global {
   interface Window {
     process?: Object;
-    __REDUX_DEVTOOLS_EXTENSION_COMPOSE__?: typeof compose;
+    __REDUX_DEVTOOLS_EXTENSION_COMPOSE__?: typeof r.compose;
   }
 }
 
-import {
-  combineReducers,
-  compose,
-  createStore,
-  Reducer
-} from 'redux';
-import { lazyReducerEnhancer } from '../lazy-reducer-enhancer.js'
-import { CounterAction } from './actions/counter.js';
+import * as r from 'redux';
+import * as enhancers from '../lazy-reducer-enhancer.js'
+import * as counterActions from './actions/counter.js';
+import * as lazyActions from './actions/lazy';
 import { LazyState } from './reducers/lazy.js';
 
 // static states
-export interface AppStateCounter {
+export interface RootStateCounter {
   counter: CounterState
 }
 
 // lazy states
-export interface AppStateLazy {
+export interface RootLazyState {
   lazy: LazyState
 }
 
-// overall state extends static states and partials lazy states
-export interface AppState extends AppStateCounter, Partial<AppStateLazy> {}
+// root action is an or of all actions lazy or not. If there is no reducer
+// it will simply not execute
+type RootAction = counterActions.CounterAction | lazyActions.LazyAction;
+
+// root state extends static states and partials of lazy states
+export type RootState = RootStateCounter & Partial<RootLazyState>;
 
 // Initially loaded reducers.
 import counter, { CounterState } from './reducers/counter.js';
 
 // Sets up a Chrome extension for time travel debugging.
 // See https://github.com/zalmoxisus/redux-devtools-extension for more information.
-const devCompose = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+const newCompose = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || r.compose;
 
 // Initializes the Redux store with a lazyReducerEnhancer (so that you can
 // lazily add reducers after the store has been created).
-export const store = createStore(
-  state => state as Reducer<AppState, CounterAction>,
-  devCompose(lazyReducerEnhancer(combineReducers))
+export const store = r.createStore(
+  ((state) => state) as r.Reducer<RootState, RootAction>,
+  newCompose(enhancers.lazyReducerEnhancer(r.combineReducers))
 );
 
-store.addReducers({
-  counter
-});
+const reducer: r.ReducersMapObject<RootStateCounter, counterActions.CounterAction> = { counter };
+store.addReducers(reducer);

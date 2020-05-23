@@ -14,9 +14,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <meta charset="utf-8">
     <title>connect-mixin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+<<<<<<< HEAD
 
     <script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
     <script src="../node_modules/wct-browser-legacy/browser.js"></script>
+=======
+    <script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
+    <script src="../node_modules/chai/chai.js"></script>
+    <script src="../node_modules/mocha/mocha.js"></script>
+    <script src="../node_modules/wct-mocha/wct-mocha.js"></script>
+>>>>>>> typescript-multiple-action-types
   </head>
   <body>
     <test-fixture id="basic">
@@ -34,6 +41,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       window.process = { env: { NODE_ENV: 'production' } };
     </script>
     <script type="module">
+<<<<<<< HEAD
+=======
+      import '@polymer/test-fixture';
+>>>>>>> typescript-multiple-action-types
       import { connect } from '../connect-mixin.js';
       import { createStore } from 'redux';
 
@@ -41,7 +52,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         (state, action) => {
           switch (action.type) {
             case 'INCREMENT':
+<<<<<<< HEAD
               return { count: state.count + action.value };
+=======
+              return {
+                ...state,
+                count: state.count + action.value
+              };
+>>>>>>> typescript-multiple-action-types
             default:
               return state;
           }
@@ -52,13 +70,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         constructor() {
           super();
           this.count = 0;
+<<<<<<< HEAD
           this.incrementCalled = false;
           this.increment = v => this.incrementCalled = true;
+=======
+        }
+
+        increment(value) {
+          this.dispatchEvent(new CustomEvent('increment', { detail: value }));
+>>>>>>> typescript-multiple-action-types
         }
       }
       customElements.define('unconnected-element', UnconnectedElement);
 
       class ConnectedElement extends connect(store)(UnconnectedElement) {
+<<<<<<< HEAD
         mapStateToProps(state) {
           return {
             count: state.count
@@ -80,11 +106,30 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       suite('x-element tests', function() {
         let unconnected, connected;
         setup(function() {
+=======
+        stateChanged(state) {
+          this.count = state.count;
+        }
+
+        increment(value) {
+          store.dispatch({
+            type: 'INCREMENT',
+            value
+          });
+        }
+      }
+      customElements.define('connected-element', ConnectedElement);
+
+      suite('connect-mixin tests', () => {
+        let unconnected, connected;
+        setup(() => {
+>>>>>>> typescript-multiple-action-types
           const div = fixture('basic');
           unconnected = div.querySelector('unconnected-element');
           connected = div.querySelector('connected-element');
         });
 
+<<<<<<< HEAD
         test('unconnected element has default bahavior', function() {
           assert.equal(unconnected.count, 0);
           unconnected.increment(42);
@@ -96,6 +141,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           assert.equal(connected.count, 5);
           connected.increment(42);
           assert.equal(connected.incrementCalled, false);
+=======
+        test('unconnected element uses default implementation', () => {
+          assert.equal(unconnected.count, 0);
+          let value = 0;
+          unconnected.addEventListener('increment', e => value = e.detail);
+          unconnected.increment(42);
+          assert.equal(value, 42);
+          assert.equal(unconnected.count, 0);
+        });
+
+        test('connected element is connected to the store', () => {
+          assert.equal(connected.count, 5);
+          connected.addEventListener('increment', () => {
+            throw new Error('should not be called');
+          });
+          connected.increment(42);
+>>>>>>> typescript-multiple-action-types
           assert.equal(connected.count, 47);
         });
       });
