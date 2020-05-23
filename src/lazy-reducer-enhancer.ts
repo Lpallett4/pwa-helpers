@@ -8,50 +8,53 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 */
 
-/*
-  If you are lazy loading any connected elements, then these elements must be
-  able to lazily install their reducers. This is a store enhancer that
-  enables that.
-
-  Sample use (where you define your redux store, in store.js):
-
-  import lazyReducerEnhancer from '../node_modules/pwa-helpers/lazy-reducer-enhancer.js';
-  import someReducer from './reducers/someReducer.js';
-
-  export const store = createStore(
-    (state, action) => state,
-    compose(lazyReducerEnhancer(combineReducers), applyMiddleware(thunk))
-  );
-
-  Then, in your page/element, you can lazy load a specific reducer with:
-  store.addReducers({
-    someReducer
-  });
-*/
-import * as r from 'redux'
+import { ReducersMapObject, StoreEnhancer } from 'redux'
 
 export interface LazyStore {
-  addReducers: (newReducers: r.ReducersMapObject) => void
+  addReducers: (newReducers: ReducersMapObject) => void
 }
 
-export const lazyReducerEnhancer = function(combineReducers: typeof r.combineReducers) {
-  const enhancer: r.StoreEnhancer<LazyStore> = (nextCreator) => {
-    return (origReducer, preloadedState) => {
-      let lazyReducers = {};
-      const nextStore = nextCreator(origReducer, preloadedState);
-      return {
-        ...nextStore,
-        addReducers(newReducers) {
-          const combinedReducerMap: r.ReducersMapObject = {
-            ...lazyReducers,
-            ...newReducers
-          };
+/**
+  A Redux store enhancer that lets you lazy-install reducers after the store
+  has booted up. Use this if your application lazy-loads routes that are connected
+  to a Redux store.
 
-          this.replaceReducer(combineReducers(lazyReducers = combinedReducerMap));
+  Example:
+
+      import { combineReducers } from 'redux';
+      import { lazyReducerEnhancer } from 'pwa-helpers/lazy-reducer-enhancer.js';
+      import someReducer from './reducers/someReducer.js';
+
+      export const store = createStore(
+        (state, action) => state,
+        compose(lazyReducerEnhancer(combineReducers))
+      );
+
+  Then, in your page/element, you can lazy load a specific reducer with:
+
+      store.addReducers({
+        someReducer
+      });
+*/
+export const lazyReducerEnhancer =
+  (combineReducers: typeof import('redux').combineReducers) => {
+    const enhancer: StoreEnhancer<LazyStore> = (nextCreator) => {
+      return (origReducer, preloadedState) => {
+        let lazyReducers = {};
+        const nextStore = nextCreator(origReducer, preloadedState);
+        return {
+          ...nextStore,
+          addReducers(newReducers) {
+            const combinedReducerMap: ReducersMapObject = {
+              ...lazyReducers,
+              ...newReducers
+            };
+
+            this.replaceReducer(combineReducers(lazyReducers = combinedReducerMap));
+          }
         }
       }
     }
-  }
 
-  return enhancer;
-}
+    return enhancer;
+  };

@@ -8,7 +8,20 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 */
 
-/*
+import { ElementContext, RunOptions } from 'axe-core';
+
+declare global {
+  namespace axe {
+    const run: typeof import('axe-core').run;
+  }
+}
+
+export interface AxeReportOptions extends RunOptions {
+  cleanup?: () => Promise<void>
+  axeConfig?: RunOptions
+}
+
+/**
   This is an [axe-core](https://github.com/dequelabs/axe-core) reporter that returns an
   Error containing every a11y violation for an element. Use this if you want to
   include `axe-core` in automated Mocha tests, etc. Note that this helper does not
@@ -19,52 +32,36 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   called after the test is ran (so that you can remove the element from the DOM, etc)
   and `axeConfig` are the optional extra config parameters to pass to axe.
 
-  Sample use:
+  Example (in a Mocha test):
 
-  import '../node_modules/axe-core/axe.min.js';
-  import { axeReport } from '../node_modules/pwa-helpers/axe-report.js';
+      import 'axe-core/axe.min.js';
+      import { axeReport } from 'pwa-helpers/axe-report.js';
 
-  describe('button', function() {
+      describe('button', function() {
 
-    it('is accessible', function() {
-      const button = document.createElement('button');
-      button.textContent = 'click this'; // Test should fail without this line.
-      return axeReport(button);
+        it('is accessible', function() {
+          const button = document.createElement('button');
+          button.textContent = 'click this'; // Test should fail without this line.
+          return axeReport(button);
 
-      // If you need to run any cleanup code after the test is run, you
-      // can use the `cleanup` object. For example,
-      // document.body.appendChild(button);
-      // return axeReport(el, { cleanup() { el.remove(); } });
-    });
-  });
+          // If you need to run any cleanup code after the test is run, you
+          // can use the `cleanup` object. For example,
+          // document.body.appendChild(button);
+          // return axeReport(el, { cleanup() { el.remove(); } });
+        });
+      });
 */
-import * as axeTypes from 'axe-core';
-
-declare global {
-  namespace axe {
-    const run: typeof axeTypes.run;
-  }
-}
-
-export interface AxeReportOptions extends axeTypes.RunOptions {
-  cleanup?: () => Promise<void>
-  axeConfig?: axeTypes.RunOptions
-}
-
-interface AxeReportRunOptions extends axeTypes.RunOptions {
-  resultTypes: string[]
-}
-
-export async function axeReport(dom: axeTypes.ElementContext, config:AxeReportOptions = {}) {
+export async function axeReport(dom: ElementContext, config:AxeReportOptions = {}) {
   const {cleanup, axeConfig} = config;
-  const {violations} = await axe.run(dom, axeConfig || {
+  const defaultConfig: RunOptions = {
     runOnly: {
       type: 'tag',
       values: ['wcag2a', 'wcag2aa', 'section508']
     },
     // Ignore tests that are passing.
     resultTypes: ['violations']
-  } as AxeReportRunOptions);
+  };
+  const {violations} = await axe.run(dom, axeConfig ||  defaultConfig);
   if (cleanup) {
     await cleanup();
   }
